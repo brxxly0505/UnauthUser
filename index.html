@@ -69,6 +69,7 @@
         const scanIcon = document.getElementById("scan-icon");
 
         let codeReader;
+        let currentDeviceId = null;
 
         scanIcon.addEventListener("click", async () => {
             // 初始化條碼讀取器
@@ -82,7 +83,13 @@
                     return;
                 }
 
-                const selectedDeviceId = devices[0].deviceId; // 預設選擇第一個相機
+                // 查找後置鏡頭（如果有）
+                const rearCamera = devices.find(device => device.label.toLowerCase().includes("back") || device.deviceId.includes("0"));
+                // 若找不到後置鏡頭，則選擇前置鏡頭
+                const selectedDeviceId = rearCamera ? rearCamera.deviceId : devices[0].deviceId;
+
+                // 儲存目前的鏡頭 ID
+                currentDeviceId = selectedDeviceId;
 
                 // 開始掃描條碼
                 codeReader.decodeFromVideoDevice(
@@ -103,6 +110,30 @@
                 console.error("初始化條碼讀取器時發生錯誤:", error);
             }
         });
+
+        // 監聽視訊裝置的切換（例如：前後鏡頭切換）
+        function switchCamera() {
+            if (currentDeviceId) {
+                // 停止當前相機
+                codeReader.reset();
+            }
+
+            // 重新初始化並選擇另一個鏡頭
+            codeReader.decodeFromVideoDevice(
+                currentDeviceId === 'front' ? 'back' : 'front',
+                videoElement,
+                (result, error) => {
+                    if (result) {
+                        console.log("條碼讀取成功:", result.text);
+                        barcodeInput.value = result.text;
+                        codeReader.reset();
+                    }
+                    if (error) {
+                        // 可選擇是否處理讀取錯誤
+                    }
+                }
+            );
+        }
     </script>
 </body>
 </html>
