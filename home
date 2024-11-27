@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>條碼掃描器</title>
+    <style>
+        #scanner-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            text-align: center;
+        }
+        video {
+            width: 100%;
+            border: 1px solid #ccc;
+        }
+        #barcode-input {
+            width: 90%;
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="scanner-container">
+        <video id="scanner"></video>
+        <input type="text" id="barcode-input" placeholder="掃描結果會出現在這裡" readonly>
+        <button id="start-scan">開始掃描</button>
+        <button id="stop-scan" style="display:none;">停止掃描</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
+    <script>
+        const videoElement = document.getElementById("scanner");
+        const barcodeInput = document.getElementById("barcode-input");
+        const startScanButton = document.getElementById("start-scan");
+        const stopScanButton = document.getElementById("stop-scan");
+
+        let codeReader;
+
+        startScanButton.addEventListener("click", async () => {
+            // 初始化條碼讀取器
+            codeReader = new ZXing.BrowserBarcodeReader();
+            console.log("條碼讀取器初始化完成");
+
+            try {
+                const devices = await codeReader.listVideoInputDevices();
+                if (devices.length === 0) {
+                    alert("找不到相機裝置");
+                    return;
+                }
+
+                const selectedDeviceId = devices[0].deviceId; // 預設選擇第一個相機
+                startScanButton.style.display = "none";
+                stopScanButton.style.display = "inline";
+
+                // 開始掃描條碼
+                codeReader.decodeFromVideoDevice(
+                    selectedDeviceId,
+                    videoElement,
+                    (result, error) => {
+                        if (result) {
+                            console.log("條碼讀取成功:", result.text);
+                            barcodeInput.value = result.text; // 將條碼結果輸入到文字框
+                            codeReader.reset(); // 重置讀取器
+                            stopScan(); // 自動停止掃描
+                        }
+                        if (error) {
+                            // 可選擇是否處理讀取錯誤
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error("初始化條碼讀取器時發生錯誤:", error);
+            }
+        });
+
+        stopScanButton.addEventListener("click", stopScan);
+
+        function stopScan() {
+            if (codeReader) {
+                codeReader.reset();
+                startScanButton.style.display = "inline";
+                stopScanButton.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
