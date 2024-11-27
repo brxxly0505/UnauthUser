@@ -58,7 +58,7 @@
         <video id="scanner"></video>
         <input type="text" id="barcode-input" placeholder="掃描結果會出現在這裡" readonly>
         <div id="scan-icon">
-            📸 <!-- 這是相機圖示 -->
+            📸 <!-- 相機圖示 -->
         </div>
     </div>
 
@@ -71,69 +71,52 @@
         let codeReader;
         let currentDeviceId = null;
 
-        scanIcon.addEventListener("click", async () => {
-            // 初始化條碼讀取器
-            codeReader = new ZXing.BrowserBarcodeReader();
-            console.log("條碼讀取器初始化完成");
-
-            try {
-                const devices = await codeReader.listVideoInputDevices();
-                if (devices.length === 0) {
-                    alert("找不到相機裝置");
-                    return;
-                }
-
-                // 查找後置鏡頭（如果有）
-                const rearCamera = devices.find(device => device.label.toLowerCase().includes("back") || device.deviceId.includes("0"));
-                // 若找不到後置鏡頭，則選擇前置鏡頭
-                const selectedDeviceId = rearCamera ? rearCamera.deviceId : devices[0].deviceId;
-
-                // 儲存目前的鏡頭 ID
-                currentDeviceId = selectedDeviceId;
-
-                // 開始掃描條碼
-                codeReader.decodeFromVideoDevice(
-                    selectedDeviceId,
-                    videoElement,
-                    (result, error) => {
-                        if (result) {
-                            console.log("條碼讀取成功:", result.text);
-                            barcodeInput.value = result.text; // 將條碼結果輸入到文字框
-                            codeReader.reset(); // 重置讀取器
-                        }
-                        if (error) {
-                            // 可選擇是否處理讀取錯誤
-                        }
-                    }
-                );
-            } catch (error) {
-                console.error("初始化條碼讀取器時發生錯誤:", error);
-            }
-        });
-
-        // 監聽視訊裝置的切換（例如：前後鏡頭切換）
-        function switchCamera() {
-            if (currentDeviceId) {
-                // 停止當前相機
+        // 啟動相機並開始掃描條碼
+        async function startScanner(deviceId) {
+            // 停止先前的掃描（如果有）
+            if (codeReader) {
                 codeReader.reset();
             }
 
-            // 重新初始化並選擇另一個鏡頭
-            codeReader.decodeFromVideoDevice(
-                currentDeviceId === 'front' ? 'back' : 'front',
-                videoElement,
-                (result, error) => {
+            try {
+                // 開始掃描條碼
+                codeReader = new ZXing.BrowserBarcodeReader();
+                await codeReader.decodeFromVideoDevice(deviceId, videoElement, (result, error) => {
                     if (result) {
                         console.log("條碼讀取成功:", result.text);
                         barcodeInput.value = result.text;
-                        codeReader.reset();
+                        codeReader.reset();  // 停止掃描
                     }
                     if (error) {
                         // 可選擇是否處理讀取錯誤
                     }
-                }
-            );
+                });
+            } catch (error) {
+                console.error("錯誤：無法啟動相機", error);
+                alert("無法啟動相機，請檢查權限或設備是否支持。");
+            }
         }
+
+        scanIcon.addEventListener("click", async () => {
+            try {
+                const devices = await ZXing.BrowserBarcodeReader.listVideoInputDevices();
+                if (devices.length === 0) {
+                    alert("找不到相機裝置！");
+                    return;
+                }
+
+                // 嘗試選擇後鏡頭（如果有）
+                const rearCamera = devices.find(device => device.label.toLowerCase().includes("back") || device.deviceId.includes("0"));
+                const frontCamera = devices.find(device => device.label.toLowerCase().includes("front") || device.deviceId.includes("1"));
+                const selectedDeviceId = rearCamera ? rearCamera.deviceId : frontCamera ? frontCamera.deviceId : devices[0].deviceId;
+
+                currentDeviceId = selectedDeviceId;
+                startScanner(selectedDeviceId);  // 開始掃描
+            } catch (error) {
+                console.error("錯誤：", error);
+                alert("無法取得相機設備，請檢查您的權限設置。");
+            }
+        });
     </script>
 </body>
 </html>
