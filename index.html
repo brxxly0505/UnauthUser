@@ -5,21 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>條碼掃描器</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
         #scanner-container {
+            text-align: center;
             width: 100%;
             max-width: 400px;
-            margin: 20px auto;
-            text-align: center;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
         }
+
         video {
             width: 100%;
             border: 1px solid #ccc;
+            border-radius: 8px;
         }
+
         #barcode-input {
             width: 90%;
             margin-top: 10px;
             padding: 10px;
             font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #scan-icon {
+            font-size: 48px;
+            color: #4CAF50;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.3s;
+        }
+
+        #scan-icon:hover {
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -27,20 +57,20 @@
     <div id="scanner-container">
         <video id="scanner"></video>
         <input type="text" id="barcode-input" placeholder="掃描結果會出現在這裡" readonly>
-        <button id="start-scan">開始掃描</button>
-        <button id="stop-scan" style="display:none;">停止掃描</button>
+        <div id="scan-icon">
+            📸 <!-- 這是相機圖示 -->
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
     <script>
         const videoElement = document.getElementById("scanner");
         const barcodeInput = document.getElementById("barcode-input");
-        const startScanButton = document.getElementById("start-scan");
-        const stopScanButton = document.getElementById("stop-scan");
+        const scanIcon = document.getElementById("scan-icon");
 
         let codeReader;
 
-        startScanButton.addEventListener("click", async () => {
+        scanIcon.addEventListener("click", async () => {
             // 初始化條碼讀取器
             codeReader = new ZXing.BrowserBarcodeReader();
             console.log("條碼讀取器初始化完成");
@@ -53,8 +83,6 @@
                 }
 
                 const selectedDeviceId = devices[0].deviceId; // 預設選擇第一個相機
-                startScanButton.style.display = "none";
-                stopScanButton.style.display = "inline";
 
                 // 開始掃描條碼
                 codeReader.decodeFromVideoDevice(
@@ -65,7 +93,6 @@
                             console.log("條碼讀取成功:", result.text);
                             barcodeInput.value = result.text; // 將條碼結果輸入到文字框
                             codeReader.reset(); // 重置讀取器
-                            stopScan(); // 自動停止掃描
                         }
                         if (error) {
                             // 可選擇是否處理讀取錯誤
@@ -76,16 +103,6 @@
                 console.error("初始化條碼讀取器時發生錯誤:", error);
             }
         });
-
-        stopScanButton.addEventListener("click", stopScan);
-
-        function stopScan() {
-            if (codeReader) {
-                codeReader.reset();
-                startScanButton.style.display = "inline";
-                stopScanButton.style.display = "none";
-            }
-        }
     </script>
 </body>
 </html>
